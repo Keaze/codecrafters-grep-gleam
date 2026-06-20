@@ -36,3 +36,8 @@ pub fn match_pattern_digit_class_returns_false_for_non_matching_input_test() {
 pub fn match_pattern_returns_false_for_unhandled_patterns_test() {
   assert !patterns.match_pattern("abc123", "abc")
 }
+
+pub fn match_pattern_char_test() {
+  assert patterns.match_pattern("abc", "a")
+  assert !patterns.match_pattern("abc", "d")
+}

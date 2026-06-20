@@ -3,8 +3,10 @@ import gleam/list
 import gleam/string
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
+  let char_pattern = string.length(pattern) == 1
   case pattern {
     "\\d" -> contains_digit(input_line)
+    x if char_pattern -> string.contains(input_line, x)
     _ -> {
       io.println("Unhandled pattern: " <> pattern)
       False
