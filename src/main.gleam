@@ -1,6 +1,6 @@
 import argv
 import gleam/io
-import gleam/string
+import patterns
 
 pub fn main() {
   let args = argv.load().arguments
@@ -9,10 +9,9 @@ pub fn main() {
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   io.print_error("Logs from your program will appear here!")
 
-  // TODO: Uncomment the code below to pass the first stage
   case args {
     ["-E", pattern, ..] -> {
-      case match_pattern(input_line, pattern) {
+      case patterns.match_pattern(input_line, pattern) {
         True -> exit(0)
         False -> exit(1)
       }
@@ -20,16 +19,6 @@ pub fn main() {
     _ -> {
       io.println("Expected first argument to be '-E'")
       exit(1)
-    }
-  }
-}
-
-fn match_pattern(input_line: String, pattern: String) -> Bool {
-  case string.length(pattern) {
-    1 -> string.contains(input_line, pattern)
-    _ -> {
-      io.println("Unhandled pattern: " <> pattern)
-      False
     }
   }
 }
