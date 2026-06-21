@@ -41,3 +41,11 @@ pub fn match_pattern_char_test() {
   assert patterns.match_pattern("abc", "a")
   assert !patterns.match_pattern("abc", "d")
 }
+
+pub fn match_pattern_word_test() {
+  assert patterns.match_pattern("abc", "\\w")
+  assert patterns.match_pattern("abc_def", "\\w")
+  assert patterns.match_pattern("_", "\\w")
+  assert patterns.match_pattern("Test123", "\\w")
+  assert !patterns.match_pattern("...", "\\w")
+}
