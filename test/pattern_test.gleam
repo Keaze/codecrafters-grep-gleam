@@ -49,3 +49,62 @@ pub fn match_pattern_word_test() {
   assert patterns.match_pattern("Test123", "\\w")
   assert !patterns.match_pattern("...", "\\w")
 }
+
+pub fn is_letter_returns_true_for_ascii_letters_test() {
+  assert patterns.is_letter("a")
+  assert patterns.is_letter("Z")
+  assert patterns.is_letter("M")
+}
+
+pub fn is_letter_returns_false_for_non_letters_test() {
+  assert !patterns.is_letter("1")
+  assert !patterns.is_letter(" ")
+  assert !patterns.is_letter("!")
+  assert !patterns.is_letter("ab")
+}
+
+pub fn is_ascii_letter_boundary_cases_test() {
+  assert !patterns.is_ascii_letter(96)
+  assert patterns.is_ascii_letter(97)
+  assert patterns.is_ascii_letter(122)
+  assert !patterns.is_ascii_letter(123)
+  assert !patterns.is_ascii_letter(64)
+  assert patterns.is_ascii_letter(65)
+  assert patterns.is_ascii_letter(90)
+  assert !patterns.is_ascii_letter(91)
+}
+
+pub fn match_pattern_single_char_test() {
+  assert patterns.match_pattern("hello", "e")
+  assert patterns.match_pattern("hello", "o")
+  assert !patterns.match_pattern("hello", "x")
+  assert !patterns.match_pattern("", "x")
+}
+
+pub fn match_pattern_single_special_chars_test() {
+  assert patterns.match_pattern("a+b", "+")
+  assert patterns.match_pattern("a.b", ".")
+  assert patterns.match_pattern("(abc)", "(")
+}
+
+pub fn match_pattern_unhandled_multi_char_patterns_test() {
+  assert !patterns.match_pattern("abc", "abc")
+  assert !patterns.match_pattern("123", "\\d\\d")
+  assert !patterns.match_pattern("hello", "+")
+  assert !patterns.match_pattern("", "")
+}
+
+pub fn contains_digit_boundary_cases_test() {
+  assert patterns.contains_digit("0")
+  assert patterns.contains_digit("9")
+  assert !patterns.contains_digit("")
+  assert !patterns.contains_digit("no digits here")
+}
+
+pub fn match_pattern_word_with_mixed_input_test() {
+  assert patterns.match_pattern("...a...", "\\w")
+  assert patterns.match_pattern("123", "\\w")
+  assert patterns.match_pattern("___", "\\w")
+  assert !patterns.match_pattern("", "\\w")
+  assert !patterns.match_pattern("!@#$%", "\\w")
+}
