@@ -3,7 +3,17 @@ import gleam/io
 import gleam/list
 import gleam/string
 
-pub fn match_pattern(input_line: String, pattern: String) -> Bool {
+type Pattern {
+  Digit
+  Word
+  Group(String)
+  NGroup(String)
+  Char(String)
+  //List(Pattern)
+  Invalid
+}
+
+fn parse_pattern(pattern) -> Pattern {
   let is_char_pattern = string.length(pattern) == 1
   let is_negative_group_pattern: Bool =
     string.starts_with(pattern, "[^") && string.ends_with(pattern, "]")
@@ -13,13 +23,28 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
     && string.ends_with(pattern, "]")
 
   case pattern {
-    "\\d" -> contains_digit(input_line)
-    x if is_char_pattern -> string.contains(input_line, x)
-    x if is_negative_group_pattern -> match_negative_group(input_line, x)
-    x if is_group_pattern -> match_group(input_line, x)
-    "\\w" -> is_word(input_line)
+    "\\d" -> Digit
+    x if is_char_pattern -> Char(x)
+    x if is_negative_group_pattern -> NGroup(x)
+    x if is_group_pattern -> Group(x)
+    "\\w" -> Word
     _ -> {
       io.println("Unhandled pattern: " <> pattern)
+      Invalid
+    }
+  }
+}
+
+pub fn match_pattern(input_line: String, pattern: String) -> Bool {
+  let pattern = parse_pattern(pattern)
+  case pattern {
+    Digit -> contains_digit(input_line)
+    Char(c) -> string.contains(input_line, c)
+    NGroup(g) -> match_negative_group(input_line, g)
+    Group(g) -> match_group(input_line, g)
+    Word -> is_word(input_line)
+    _ -> {
+      io.println("Unhandled pattern: " <> string.inspect(pattern))
       False
     }
   }
