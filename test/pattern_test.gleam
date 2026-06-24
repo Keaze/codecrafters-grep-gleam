@@ -137,3 +137,59 @@ pub fn match_pattern_word_with_mixed_input_test() {
   assert !patterns.match_pattern("", "\\w")
   assert !patterns.match_pattern("!@#$%", "\\w")
 }
+
+pub fn match_pattern_negative_group_matches_when_char_not_in_set_test() {
+  assert patterns.match_pattern("cat", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_does_not_match_when_all_chars_in_set_test() {
+  assert !patterns.match_pattern("cab", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_empty_input_test() {
+  assert !patterns.match_pattern("", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_single_non_set_char_test() {
+  assert patterns.match_pattern("z", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_only_set_chars_test() {
+  assert !patterns.match_pattern("ab", "[^abc]")
+  assert !patterns.match_pattern("ba", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_special_char_not_in_set_test() {
+  assert patterns.match_pattern("a+b", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_digit_not_in_set_test() {
+  assert patterns.match_pattern("a1b", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_whitespace_test() {
+  assert patterns.match_pattern(" ", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_uppercase_not_in_lowercase_set_test() {
+  assert patterns.match_pattern("A", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_all_input_chars_outside_set_test() {
+  assert patterns.match_pattern("xyz", "[^abc]")
+}
+
+pub fn match_pattern_negative_group_single_char_set_test() {
+  assert patterns.match_pattern("b", "[^a]")
+  assert !patterns.match_pattern("a", "[^a]")
+}
+
+pub fn match_pattern_negative_group_numeric_set_test() {
+  assert patterns.match_pattern("abc", "[^123]")
+  assert !patterns.match_pattern("12", "[^123]")
+}
+
+pub fn match_pattern_negative_group_mixed_input_test() {
+  assert patterns.match_pattern("aaat", "[^abc]")
+  assert patterns.match_pattern("abcz", "[^abc]")
+}

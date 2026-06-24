@@ -5,12 +5,17 @@ import gleam/string
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
   let is_char_pattern = string.length(pattern) == 1
+  let is_negative_group_pattern: Bool =
+    string.starts_with(pattern, "[^") && string.ends_with(pattern, "]")
   let is_group_pattern: Bool =
-    string.starts_with(pattern, "[") && string.ends_with(pattern, "]")
+    !is_negative_group_pattern
+    && string.starts_with(pattern, "[")
+    && string.ends_with(pattern, "]")
 
   case pattern {
     "\\d" -> contains_digit(input_line)
     x if is_char_pattern -> string.contains(input_line, x)
+    x if is_negative_group_pattern -> match_negative_group(input_line, x)
     x if is_group_pattern -> match_group(input_line, x)
     "\\w" -> is_word(input_line)
     _ -> {
@@ -18,6 +23,19 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
       False
     }
   }
+}
+
+fn match_negative_group(input_line: String, pattern: String) -> Bool {
+  let graphemes = string.to_graphemes(pattern)
+  let len = list.length(graphemes)
+  let set_chars =
+    graphemes
+    |> list.drop(2)
+    |> list.take(int.max(len - 3, 0))
+
+  input_line
+  |> string.to_graphemes
+  |> list.any(fn(char) { !list.contains(set_chars, char) })
 }
 
 fn match_group(input_line: String, pattern: String) -> Bool {
