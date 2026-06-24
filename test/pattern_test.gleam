@@ -193,3 +193,82 @@ pub fn match_pattern_negative_group_mixed_input_test() {
   assert patterns.match_pattern("aaat", "[^abc]")
   assert patterns.match_pattern("abcz", "[^abc]")
 }
+
+// Sequence matching tests
+pub fn match_pattern_digit_followed_by_literal_test() {
+  assert patterns.match_pattern("1 apple", "\\d apple")
+}
+
+pub fn match_pattern_digit_followed_by_literal_no_match_test() {
+  assert !patterns.match_pattern("1 orange", "\\d apple")
+}
+
+pub fn match_pattern_three_digits_followed_by_apples_test() {
+  assert patterns.match_pattern(
+    "I got 100 apples from the store",
+    "\\d\\d\\d apples",
+  )
+}
+
+pub fn match_pattern_three_digits_followed_by_apples_no_match_test() {
+  assert !patterns.match_pattern(
+    "I got 1 apple from the store",
+    "\\d\\d\\d apples",
+  )
+}
+
+pub fn match_pattern_digit_word_sequence_test() {
+  assert patterns.match_pattern("4 cats", "\\d \\w\\w\\ws")
+}
+
+pub fn match_pattern_digit_word_sequence_no_match_test() {
+  assert !patterns.match_pattern("1 dog", "\\d \\w\\w\\ws")
+}
+
+pub fn parse_single_pattern_test() {
+  assert patterns.parse_combined_pattern("\\d") == patterns.Digit
+  assert patterns.parse_combined_pattern("\\w") == patterns.Word
+  assert patterns.parse_combined_pattern("w") == patterns.Char("w")
+}
+
+pub fn parse_multi_class_pattern_test() {
+  assert patterns.parse_combined_pattern("\\d\\d")
+    == patterns.PatternList([patterns.Digit, patterns.Digit])
+  assert patterns.parse_combined_pattern("\\w\\d")
+    == patterns.PatternList([patterns.Word, patterns.Digit])
+  assert patterns.parse_combined_pattern("was")
+    == patterns.PatternList([
+      patterns.Char("w"),
+      patterns.Char("a"),
+      patterns.Char("s"),
+    ])
+
+  assert patterns.parse_combined_pattern("\\d\\d\\d apples")
+    == patterns.PatternList([
+      patterns.Digit,
+      patterns.Digit,
+      patterns.Digit,
+      patterns.Char(" "),
+      patterns.Char("a"),
+      patterns.Char("p"),
+      patterns.Char("p"),
+      patterns.Char("l"),
+      patterns.Char("e"),
+      patterns.Char("s"),
+    ])
+}
+
+pub fn parse_single_pattern_group_test() {
+  assert patterns.parse_combined_pattern("[abc]") == patterns.Group("abc")
+  assert patterns.parse_combined_pattern("[c]") == patterns.Group("c")
+  assert patterns.parse_combined_pattern("[]") == patterns.Group("")
+}
+
+pub fn parse_multi_class_pattern_with_group_test() {
+  assert patterns.parse_combined_pattern("a[abc]\\d")
+    == patterns.PatternList([
+      patterns.Char("a"),
+      patterns.Group("abc"),
+      patterns.Digit,
+    ])
+}
