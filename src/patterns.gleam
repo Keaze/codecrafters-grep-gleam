@@ -15,28 +15,6 @@ pub type Pattern {
   Invalid
 }
 
-fn parse_pattern(pattern) -> Pattern {
-  let is_char_pattern = string.length(pattern) == 1
-  let is_negative_group_pattern: Bool =
-    string.starts_with(pattern, "[^") && string.ends_with(pattern, "]")
-  let is_group_pattern: Bool =
-    !is_negative_group_pattern
-    && string.starts_with(pattern, "[")
-    && string.ends_with(pattern, "]")
-
-  case pattern {
-    "\\d" -> Digit
-    x if is_char_pattern -> Char(x)
-    x if is_negative_group_pattern -> NGroup(x)
-    x if is_group_pattern -> Group(x)
-    "\\w" -> Word
-    _ -> {
-      io.println("Unhandled pattern: " <> pattern)
-      Invalid
-    }
-  }
-}
-
 pub fn parse_combined_pattern(pattern: String) -> Pattern {
   let res = parse_combined_pattern_rec(string.to_graphemes(pattern), [], [])
   case res {
@@ -64,13 +42,17 @@ fn parse_combined_pattern_rec(
       let #(group, rest) =
         list.drop(remaining, 1)
         |> list.split_while(fn(x) { x != "]" })
-      case rest {
-        [_, ..xs] ->
+      case group, rest {
+        ["^", ..bs], [_, ..xs] ->
+          parse_combined_pattern_rec(xs, [], [NGroup(string.concat(bs)), ..acc])
+
+        _, [_, ..xs] ->
           parse_combined_pattern_rec(xs, [], [
             Group(string.concat(group)),
             ..acc
           ])
-        [] -> PatternList(list.reverse([Invalid, ..acc]))
+
+        _, [] -> PatternList(list.reverse([Invalid, ..acc]))
       }
     }
 
@@ -89,7 +71,7 @@ fn parse_escape_helper(char: String) -> Pattern {
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
-  let pattern = parse_pattern(pattern)
+  let pattern = parse_combined_pattern(pattern)
   case pattern {
     Digit -> contains_digit(input_line)
     Char(c) -> string.contains(input_line, c)
@@ -105,23 +87,14 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
 
 fn match_negative_group(input_line: String, pattern: String) -> Bool {
   let graphemes = string.to_graphemes(pattern)
-  let len = list.length(graphemes)
-  let set_chars =
-    graphemes
-    |> list.drop(2)
-    |> list.take(int.max(len - 3, 0))
 
   input_line
   |> string.to_graphemes
-  |> list.any(fn(char) { !list.contains(set_chars, char) })
+  |> list.any(fn(char) { !list.contains(graphemes, char) })
 }
 
 fn match_group(input_line: String, pattern: String) -> Bool {
-  let graphemes = string.to_graphemes(pattern)
-  let len = list.length(graphemes)
-  graphemes
-  |> list.drop(1)
-  |> list.take(int.max(len - 2, 0))
+  string.to_graphemes(pattern)
   |> list.any(fn(char) { string.contains(input_line, char) })
 }
 

@@ -264,6 +264,21 @@ pub fn parse_single_pattern_group_test() {
   assert patterns.parse_combined_pattern("[]") == patterns.Group("")
 }
 
+pub fn parse_single_pattern_ngroup_test() {
+  assert patterns.parse_combined_pattern("[^abc]") == patterns.NGroup("abc")
+  assert patterns.parse_combined_pattern("[^c]") == patterns.NGroup("c")
+  assert patterns.parse_combined_pattern("[^]") == patterns.NGroup("")
+}
+
+pub fn parse_multi_class_pattern_with_ngroup_test() {
+  assert patterns.parse_combined_pattern("a[^abc]\\d")
+    == patterns.PatternList([
+      patterns.Char("a"),
+      patterns.NGroup("abc"),
+      patterns.Digit,
+    ])
+}
+
 pub fn parse_multi_class_pattern_with_group_test() {
   assert patterns.parse_combined_pattern("a[abc]\\d")
     == patterns.PatternList([
