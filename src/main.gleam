@@ -1,6 +1,6 @@
 import argv
 import gleam/io
-import patterns
+import pattern_matcher
 
 pub fn main() {
   let args = argv.load().arguments
@@ -11,7 +11,7 @@ pub fn main() {
 
   case args {
     ["-E", pattern, ..] -> {
-      case patterns.match_pattern(input_line, pattern) {
+      case pattern_matcher.match_pattern(input_line, pattern) {
         True -> exit(0)
         False -> exit(1)
       }
