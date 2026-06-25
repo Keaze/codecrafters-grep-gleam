@@ -1,6 +1,3 @@
-import gleam/int
-import gleam/io
-
 import gleam/list
 import gleam/string
 
@@ -73,16 +70,62 @@ fn parse_escape_helper(char: String) -> Pattern {
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
   let pattern = parse_combined_pattern(pattern)
   case pattern {
+    PatternList([]) -> False
+    PatternList(patterns) -> match_pattern_list(input_line, patterns)
     Digit -> contains_digit(input_line)
     Char(c) -> string.contains(input_line, c)
     NGroup(g) -> match_negative_group(input_line, g)
     Group(g) -> match_group(input_line, g)
     Word -> is_word(input_line)
-    _ -> {
-      io.println("Unhandled pattern: " <> string.inspect(pattern))
-      False
+    _ -> False
+  }
+}
+
+fn match_pattern_list(input_line: String, patterns: List(Pattern)) -> Bool {
+  match_pattern_list_loop(string.to_graphemes(input_line), patterns)
+}
+
+fn match_pattern_list_loop(
+  input: List(String),
+  patterns: List(Pattern),
+) -> Bool {
+  case match_sequence(input, patterns) {
+    True -> True
+    False -> {
+      case input {
+        [] -> False
+        [_, ..rest] -> match_pattern_list_loop(rest, patterns)
+      }
     }
   }
+}
+
+fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
+  case input, patterns {
+    _, [] -> True
+    [], _ -> False
+    [c, ..rest_input], [p, ..rest_patterns] -> {
+      case match_char_pattern(c, p) {
+        True -> match_sequence(rest_input, rest_patterns)
+        False -> False
+      }
+    }
+  }
+}
+
+fn match_char_pattern(char: String, pattern: Pattern) -> Bool {
+  case pattern {
+    Digit -> is_digit(char)
+    Word -> is_word_char(char)
+    Char(c) -> char == c
+    Group(g) -> list.contains(string.to_graphemes(g), char)
+    NGroup(g) -> !list.contains(string.to_graphemes(g), char)
+    _ -> False
+  }
+}
+
+fn is_word_char(char: String) -> Bool {
+  is_digit(char) || is_letter(char) || char == "_"
 }
 
 fn match_negative_group(input_line: String, pattern: String) -> Bool {
@@ -101,7 +144,7 @@ fn match_group(input_line: String, pattern: String) -> Bool {
 fn is_word(input_line: String) -> Bool {
   input_line
   |> string.to_graphemes
-  |> list.any(fn(char) { is_digit(char) || is_letter(char) || char == "_" })
+  |> list.any(is_word_char)
 }
 
 pub fn contains_digit(input: String) -> Bool {

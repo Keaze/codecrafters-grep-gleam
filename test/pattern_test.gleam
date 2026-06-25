@@ -33,8 +33,9 @@ pub fn match_pattern_digit_class_returns_false_for_non_matching_input_test() {
   assert !patterns.match_pattern("", "\\d")
 }
 
-pub fn match_pattern_returns_false_for_unhandled_patterns_test() {
-  assert !patterns.match_pattern("abc123", "abc")
+pub fn match_pattern_literal_sequence_test() {
+  assert patterns.match_pattern("abc123", "abc")
+  assert !patterns.match_pattern("ab123", "abc")
 }
 
 pub fn match_pattern_char_test() {
@@ -116,9 +117,9 @@ pub fn match_pattern_single_special_chars_test() {
   assert patterns.match_pattern("(abc)", "(")
 }
 
-pub fn match_pattern_unhandled_multi_char_patterns_test() {
-  assert !patterns.match_pattern("abc", "abc")
-  assert !patterns.match_pattern("123", "\\d\\d")
+pub fn match_pattern_multi_char_patterns_test() {
+  assert patterns.match_pattern("abc", "abc")
+  assert patterns.match_pattern("123", "\\d\\d")
   assert !patterns.match_pattern("hello", "+")
   assert !patterns.match_pattern("", "")
 }
