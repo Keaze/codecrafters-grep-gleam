@@ -38,3 +38,16 @@ pub fn parse_mixed_literal_and_class_sequence_test() {
       pattern_parser.Char("s"),
     ])
 }
+
+pub fn parse_escaped_backslash_test() {
+  assert pattern_parser.parse_combined_pattern("\\\\")
+    == pattern_parser.Char("\\")
+}
+
+pub fn parse_escaped_backslash_sequence_test() {
+  assert pattern_parser.parse_combined_pattern("\\\\d")
+    == pattern_parser.PatternList([
+      pattern_parser.Char("\\"),
+      pattern_parser.Char("d"),
+    ])
+}

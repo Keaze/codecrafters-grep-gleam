@@ -1,10 +1,15 @@
 import argv
 import gleam/io
+import gleam/string
 import pattern_matcher
 
-pub fn main() {
+pub fn main() -> Nil {
   let args = argv.load().arguments
-  let input_line = get_line("")
+  let raw_line = get_line("")
+  let input_line = case string.ends_with(raw_line, "\n") {
+    True -> string.drop_end(raw_line, 1)
+    False -> raw_line
+  }
 
   // You can use print statements as follows for debugging, they'll be visible when running tests.
   io.print_error("Logs from your program will appear here!")
@@ -27,4 +32,4 @@ pub fn main() {
 fn get_line(prompt prompt: String) -> String
 
 @external(erlang, "erlang", "halt")
-pub fn exit(code: Int) -> Int
+pub fn exit(code: Int) -> Nil

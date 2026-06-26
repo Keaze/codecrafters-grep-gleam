@@ -35,3 +35,13 @@ pub fn match_pattern_single_special_chars_test() {
   assert pattern_matcher.match_pattern("a.b", ".")
   assert pattern_matcher.match_pattern("(abc)", "(")
 }
+
+pub fn match_pattern_escaped_backslash_test() {
+  assert pattern_matcher.match_pattern("\\", "\\\\")
+  assert !pattern_matcher.match_pattern("a", "\\\\")
+}
+
+pub fn match_pattern_escaped_backslash_sequence_test() {
+  assert pattern_matcher.match_pattern("\\d", "\\\\d")
+  assert !pattern_matcher.match_pattern("d", "\\\\d")
+}

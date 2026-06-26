@@ -33,7 +33,7 @@ pub fn parse_start_pattern_group_test() {
   assert pattern_parser.parse_combined_pattern("^[abc]")
     == pattern_parser.PatternList([
       pattern_parser.Start,
-      pattern_parser.Group("abc"),
+      pattern_parser.Group(["a", "b", "c"]),
     ])
 }
 
@@ -41,13 +41,12 @@ pub fn parse_start_pattern_negative_group_test() {
   assert pattern_parser.parse_combined_pattern("^[^abc]")
     == pattern_parser.PatternList([
       pattern_parser.Start,
-      pattern_parser.NGroup("abc"),
+      pattern_parser.NGroup(["a", "b", "c"]),
     ])
 }
 
 pub fn parse_only_start_anchor_test() {
-  assert pattern_parser.parse_combined_pattern("^")
-    == pattern_parser.Start
+  assert pattern_parser.parse_combined_pattern("^") == pattern_parser.Start
 }
 
 // ---- Parser: End anchor ($ at end) ----
@@ -81,7 +80,7 @@ pub fn parse_end_pattern_word_class_test() {
 pub fn parse_end_pattern_group_test() {
   assert pattern_parser.parse_combined_pattern("[abc]$")
     == pattern_parser.PatternList([
-      pattern_parser.Group("abc"),
+      pattern_parser.Group(["a", "b", "c"]),
       pattern_parser.End,
     ])
 }
@@ -89,7 +88,7 @@ pub fn parse_end_pattern_group_test() {
 pub fn parse_end_pattern_negative_group_test() {
   assert pattern_parser.parse_combined_pattern("[^abc]$")
     == pattern_parser.PatternList([
-      pattern_parser.NGroup("abc"),
+      pattern_parser.NGroup(["a", "b", "c"]),
       pattern_parser.End,
     ])
 }
@@ -153,4 +152,9 @@ pub fn match_pattern_exact_match_with_anchors_no_match_test() {
 
 pub fn match_pattern_exact_match_anchors_banana_underscore_banana_test() {
   assert !pattern_matcher.match_pattern("banana_banana", "^banana$")
+}
+
+pub fn match_pattern_start_anchor_only_test() {
+  assert pattern_matcher.match_pattern("abc", "^")
+  assert pattern_matcher.match_pattern("", "^")
 }

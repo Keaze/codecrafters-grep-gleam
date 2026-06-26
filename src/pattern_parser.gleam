@@ -4,11 +4,10 @@ import gleam/string
 pub type Pattern {
   Digit
   Word
-  Group(String)
-  NGroup(String)
+  Group(List(String))
+  NGroup(List(String))
   Char(String)
   PatternList(List(Pattern))
-  Empty
   Invalid
   Start
   End
@@ -27,6 +26,8 @@ pub fn parse_combined_pattern(pattern: String) -> Pattern {
   }
 }
 
+// Parses a pattern string into a Pattern. The accumulator `acc` is built in
+// reverse order because we prepend elements, so it is reversed at the end.
 fn parse_combined_pattern_rec(
   remaining: List(String),
   current_token: List(String),
@@ -35,27 +36,23 @@ fn parse_combined_pattern_rec(
   case remaining, current_token {
     [], [] -> PatternList(list.reverse(acc))
     ["$"], [] -> check_for_exact_pattern(acc)
-    [], ["\\"] -> PatternList(list.reverse([parse_escape_helper("\\"), ..acc]))
+    [], ["\\"] -> PatternList(list.reverse([Char("\\"), ..acc]))
 
     ["\\", ..rest], [] -> parse_combined_pattern_rec(rest, ["\\"], acc)
-    ["\\", ..rest], ["\\"] -> parse_combined_pattern_rec(rest, ["\\"], acc)
+    ["\\", ..rest], ["\\"] ->
+      parse_combined_pattern_rec(rest, [], [Char("\\"), ..acc])
 
     [c, ..rest], ["\\"] ->
       parse_combined_pattern_rec(rest, [], [parse_escape_helper(c), ..acc])
 
-    ["[", ..], [] -> {
-      let #(group, rest) =
-        list.drop(remaining, 1)
-        |> list.split_while(fn(x) { x != "]" })
-      case group, rest {
+    ["[", ..rest], [] -> {
+      let #(group, rest_after) = list.split_while(rest, fn(x) { x != "]" })
+      case group, rest_after {
         ["^", ..bs], [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [NGroup(string.concat(bs)), ..acc])
+          parse_combined_pattern_rec(xs, [], [NGroup(bs), ..acc])
 
         _, [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [
-            Group(string.concat(group)),
-            ..acc
-          ])
+          parse_combined_pattern_rec(xs, [], [Group(group), ..acc])
 
         _, [] -> PatternList(list.reverse([Invalid, ..acc]))
       }
@@ -81,6 +78,7 @@ fn parse_escape_helper(char: String) -> Pattern {
   case char {
     "w" -> Word
     "d" -> Digit
+    "\\" -> Char("\\")
     _ -> Char("\\" <> char)
   }
 }
