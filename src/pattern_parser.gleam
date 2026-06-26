@@ -10,10 +10,16 @@ pub type Pattern {
   PatternList(List(Pattern))
   Empty
   Invalid
+  Start
+  End
 }
 
 pub fn parse_combined_pattern(pattern: String) -> Pattern {
-  let res = parse_combined_pattern_rec(string.to_graphemes(pattern), [], [])
+  let pattern_chars = string.to_graphemes(pattern)
+  let res = case pattern_chars {
+    ["^", ..xs] -> parse_combined_pattern_rec(xs, [], [Start])
+    x -> parse_combined_pattern_rec(x, [], [])
+  }
   case res {
     PatternList([x]) -> x
     x -> x
@@ -27,6 +33,7 @@ fn parse_combined_pattern_rec(
 ) -> Pattern {
   case remaining, current_token {
     [], [] -> PatternList(list.reverse(acc))
+    ["^"], [] -> PatternList(list.reverse([End, ..acc]))
     [], ["\\"] -> PatternList(list.reverse([parse_escape_helper("\\"), ..acc]))
 
     ["\\", ..rest], [] -> parse_combined_pattern_rec(rest, ["\\"], acc)
