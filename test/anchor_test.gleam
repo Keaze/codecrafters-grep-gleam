@@ -50,10 +50,10 @@ pub fn parse_only_start_anchor_test() {
     == pattern_parser.Start
 }
 
-// ---- Parser: End anchor (^ at end) ----
+// ---- Parser: End anchor ($ at end) ----
 
 pub fn parse_end_pattern_test() {
-  assert pattern_parser.parse_combined_pattern("abc^")
+  assert pattern_parser.parse_combined_pattern("abc$")
     == pattern_parser.PatternList([
       pattern_parser.Char("a"),
       pattern_parser.Char("b"),
@@ -63,7 +63,7 @@ pub fn parse_end_pattern_test() {
 }
 
 pub fn parse_end_pattern_single_char_test() {
-  assert pattern_parser.parse_combined_pattern("a^")
+  assert pattern_parser.parse_combined_pattern("a$")
     == pattern_parser.PatternList([
       pattern_parser.Char("a"),
       pattern_parser.End,
@@ -71,7 +71,7 @@ pub fn parse_end_pattern_single_char_test() {
 }
 
 pub fn parse_end_pattern_word_class_test() {
-  assert pattern_parser.parse_combined_pattern("\\w^")
+  assert pattern_parser.parse_combined_pattern("\\w$")
     == pattern_parser.PatternList([
       pattern_parser.Word,
       pattern_parser.End,
@@ -79,7 +79,7 @@ pub fn parse_end_pattern_word_class_test() {
 }
 
 pub fn parse_end_pattern_group_test() {
-  assert pattern_parser.parse_combined_pattern("[abc]^")
+  assert pattern_parser.parse_combined_pattern("[abc]$")
     == pattern_parser.PatternList([
       pattern_parser.Group("abc"),
       pattern_parser.End,
@@ -87,7 +87,7 @@ pub fn parse_end_pattern_group_test() {
 }
 
 pub fn parse_end_pattern_negative_group_test() {
-  assert pattern_parser.parse_combined_pattern("[^abc]^")
+  assert pattern_parser.parse_combined_pattern("[^abc]$")
     == pattern_parser.PatternList([
       pattern_parser.NGroup("abc"),
       pattern_parser.End,
@@ -97,7 +97,7 @@ pub fn parse_end_pattern_negative_group_test() {
 // ---- Parser: Start and end anchor combined ----
 
 pub fn parse_start_and_end_pattern_test() {
-  assert pattern_parser.parse_combined_pattern("^abc^")
+  assert pattern_parser.parse_combined_pattern("^abc$")
     == pattern_parser.PatternList([
       pattern_parser.Start,
       pattern_parser.Char("a"),
@@ -125,30 +125,30 @@ pub fn match_pattern_start_anchor_with_group_test() {
   assert pattern_matcher.match_pattern("apple", "^[abc]")
 }
 
-// ---- Matcher: End anchor (^ at end) ----
+// ---- Matcher: End anchor ($ at end) ----
 
 pub fn match_pattern_end_anchor_at_end_test() {
-  assert pattern_matcher.match_pattern("abc", "abc^")
+  assert pattern_matcher.match_pattern("abc", "abc$")
 }
 
 pub fn match_pattern_end_anchor_not_at_end_test() {
-  assert !pattern_matcher.match_pattern("abcd", "abc^")
+  assert !pattern_matcher.match_pattern("abcd", "abc$")
 }
 
 pub fn match_pattern_end_anchor_with_digit_class_test() {
-  assert pattern_matcher.match_pattern("123", "\\d^")
+  assert pattern_matcher.match_pattern("123", "\\d$")
 }
 
 pub fn match_pattern_end_anchor_with_group_test() {
-  assert pattern_matcher.match_pattern("cab", "[abc]^")
+  assert pattern_matcher.match_pattern("cab", "[abc]$")
 }
 
 // ---- Matcher: Start and end anchor combined ----
 
 pub fn match_pattern_exact_match_with_anchors_test() {
-  assert pattern_matcher.match_pattern("abc", "^abc^")
+  assert pattern_matcher.match_pattern("abc", "^abc$")
 }
 
 pub fn match_pattern_exact_match_with_anchors_no_match_test() {
-  assert !pattern_matcher.match_pattern("xabcx", "^abc^")
+  assert !pattern_matcher.match_pattern("xabcx", "^abc$")
 }

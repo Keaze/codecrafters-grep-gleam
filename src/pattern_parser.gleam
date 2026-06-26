@@ -33,7 +33,7 @@ fn parse_combined_pattern_rec(
 ) -> Pattern {
   case remaining, current_token {
     [], [] -> PatternList(list.reverse(acc))
-    ["^"], [] -> PatternList(list.reverse([End, ..acc]))
+    ["$"], [] -> PatternList(list.reverse([End, ..acc]))
     [], ["\\"] -> PatternList(list.reverse([parse_escape_helper("\\"), ..acc]))
 
     ["\\", ..rest], [] -> parse_combined_pattern_rec(rest, ["\\"], acc)
