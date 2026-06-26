@@ -2,7 +2,7 @@ import gleam/list
 import gleam/string
 
 import pattern_parser.{
-  type Pattern, Char, Digit, Group, NGroup, PatternList, Word,
+  type Pattern, Char, Digit, End, Group, NGroup, PatternList, Start, Word,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
@@ -20,7 +20,12 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
 }
 
 fn match_pattern_list(input_line: String, patterns: List(Pattern)) -> Bool {
-  match_pattern_list_loop(string.to_graphemes(input_line), patterns)
+  let input_chars = string.to_graphemes(input_line)
+  case input_chars, patterns {
+    [a, ..bs], [Start, x, ..xs] ->
+      match_char_pattern(a, x) && match_pattern_list_loop(bs, xs)
+    _, _ -> match_pattern_list_loop(input_chars, patterns)
+  }
 }
 
 fn match_pattern_list_loop(
@@ -41,6 +46,7 @@ fn match_pattern_list_loop(
 fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
   case input, patterns {
     _, [] -> True
+    [], [End] -> True
     [], _ -> False
     [c, ..rest_input], [p, ..rest_patterns] -> {
       case match_char_pattern(c, p) {
