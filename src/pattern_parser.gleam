@@ -12,6 +12,7 @@ pub type Pattern {
   Invalid
   Start
   End
+  Exact(List(Pattern))
 }
 
 pub fn parse_combined_pattern(pattern: String) -> Pattern {
@@ -33,7 +34,7 @@ fn parse_combined_pattern_rec(
 ) -> Pattern {
   case remaining, current_token {
     [], [] -> PatternList(list.reverse(acc))
-    ["$"], [] -> PatternList(list.reverse([End, ..acc]))
+    ["$"], [] -> check_for_exact_pattern(acc)
     [], ["\\"] -> PatternList(list.reverse([parse_escape_helper("\\"), ..acc]))
 
     ["\\", ..rest], [] -> parse_combined_pattern_rec(rest, ["\\"], acc)
@@ -63,6 +64,16 @@ fn parse_combined_pattern_rec(
     [c, ..rest], [] -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
 
     _, _ -> PatternList(list.reverse([Invalid, ..acc]))
+  }
+}
+
+fn check_for_exact_pattern(acc: List(Pattern)) -> Pattern {
+  case list.last(acc) {
+    Ok(Start) ->
+      list.take_while(acc, fn(p) { p != Start })
+      |> list.reverse
+      |> Exact
+    _ -> PatternList(list.reverse([End, ..acc]))
   }
 }
 

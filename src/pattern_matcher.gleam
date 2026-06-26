@@ -2,7 +2,7 @@ import gleam/list
 import gleam/string
 
 import pattern_parser.{
-  type Pattern, Char, Digit, End, Group, NGroup, PatternList, Start, Word,
+  type Pattern, Char, Digit, End, Exact, Group, NGroup, PatternList, Start, Word,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
@@ -10,12 +10,31 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
   case pattern {
     PatternList([]) -> False
     PatternList(patterns) -> match_pattern_list(input_line, patterns)
+    Exact(patterns) -> match_exact_pattern(input_line, patterns)
     Digit -> contains_digit(input_line)
     Char(c) -> string.contains(input_line, c)
     NGroup(g) -> match_negative_group(input_line, g)
     Group(g) -> match_group(input_line, g)
     Word -> is_word(input_line)
     _ -> False
+  }
+}
+
+fn match_exact_pattern(input_line: String, patterns: List(Pattern)) -> Bool {
+  let input_chars = string.to_graphemes(input_line)
+  match_exact_sequence(input_chars, patterns)
+}
+
+fn match_exact_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
+  case input, patterns {
+    _, [] -> True
+    [], [End] -> True
+    [_], [End] -> False
+    [], _ -> False
+    [c, ..rest_input], [p, ..rest_patterns] -> {
+      match_char_pattern(c, p)
+      && match_exact_sequence(rest_input, rest_patterns)
+    }
   }
 }
 
@@ -35,9 +54,9 @@ fn match_pattern_list_loop(
   case match_sequence(input, patterns) {
     True -> True
     False -> {
-      case input {
-        [] -> False
-        [_, ..rest] -> match_pattern_list_loop(rest, patterns)
+      case input, patterns {
+        [], _ -> False
+        [_, ..rest], _ -> match_pattern_list_loop(rest, patterns)
       }
     }
   }
@@ -47,6 +66,7 @@ fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
   case input, patterns {
     _, [] -> True
     [], [End] -> True
+    [_], [End] -> False
     [], _ -> False
     [c, ..rest_input], [p, ..rest_patterns] -> {
       case match_char_pattern(c, p) {

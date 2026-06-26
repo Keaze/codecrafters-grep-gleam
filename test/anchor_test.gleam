@@ -98,12 +98,10 @@ pub fn parse_end_pattern_negative_group_test() {
 
 pub fn parse_start_and_end_pattern_test() {
   assert pattern_parser.parse_combined_pattern("^abc$")
-    == pattern_parser.PatternList([
-      pattern_parser.Start,
+    == pattern_parser.Exact([
       pattern_parser.Char("a"),
       pattern_parser.Char("b"),
       pattern_parser.Char("c"),
-      pattern_parser.End,
     ])
 }
 
@@ -151,4 +149,8 @@ pub fn match_pattern_exact_match_with_anchors_test() {
 
 pub fn match_pattern_exact_match_with_anchors_no_match_test() {
   assert !pattern_matcher.match_pattern("xabcx", "^abc$")
+}
+
+pub fn match_pattern_exact_match_anchors_banana_underscore_banana_test() {
+  assert !pattern_matcher.match_pattern("banana_banana", "^banana$")
 }
