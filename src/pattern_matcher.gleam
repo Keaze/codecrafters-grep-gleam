@@ -27,9 +27,9 @@ fn match_exact_pattern(input_line: String, patterns: List(Pattern)) -> Bool {
 
 fn match_exact_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
   case input, patterns {
-    _, [] -> True
+    [_, ..], [] -> False
+    [], [] -> True
     [], [End] -> True
-    [_], [End] -> False
     [], _ -> False
     [c, ..rest_input], [p, ..rest_patterns] -> {
       match_char_pattern(c, p)
