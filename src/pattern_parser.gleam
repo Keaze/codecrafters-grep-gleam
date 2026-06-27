@@ -12,6 +12,7 @@ pub type Pattern {
   Start
   End
   Exact(List(Pattern))
+  AtLeastOne(Pattern)
 }
 
 pub fn parse_combined_pattern(pattern: String) -> Pattern {
@@ -33,19 +34,25 @@ fn parse_combined_pattern_rec(
   current_token: List(String),
   acc: List(Pattern),
 ) -> Pattern {
-  case remaining, current_token {
-    [], [] -> PatternList(list.reverse(acc))
-    ["$"], [] -> check_for_exact_pattern(acc)
-    [], ["\\"] -> PatternList(list.reverse([Char("\\"), ..acc]))
+  case remaining, current_token, acc {
+    [], [], _ -> PatternList(list.reverse(acc))
 
-    ["\\", ..rest], [] -> parse_combined_pattern_rec(rest, ["\\"], acc)
-    ["\\", ..rest], ["\\"] ->
+    ["$"], [], _ -> check_for_exact_pattern(acc)
+
+    ["+", ..rest], [], [x, ..xs] ->
+      parse_combined_pattern_rec(rest, [], [AtLeastOne(x), ..xs])
+
+    [], ["\\"], _ -> PatternList(list.reverse([Char("\\"), ..acc]))
+
+    ["\\", ..rest], [], _ -> parse_combined_pattern_rec(rest, ["\\"], acc)
+
+    ["\\", ..rest], ["\\"], _ ->
       parse_combined_pattern_rec(rest, [], [Char("\\"), ..acc])
 
-    [c, ..rest], ["\\"] ->
+    [c, ..rest], ["\\"], _ ->
       parse_combined_pattern_rec(rest, [], [parse_escape_helper(c), ..acc])
 
-    ["[", ..rest], [] -> {
+    ["[", ..rest], [], _ -> {
       let #(group, rest_after) = list.split_while(rest, fn(x) { x != "]" })
       case group, rest_after {
         ["^", ..bs], [_, ..xs] ->
@@ -58,9 +65,9 @@ fn parse_combined_pattern_rec(
       }
     }
 
-    [c, ..rest], [] -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
+    [c, ..rest], [], _ -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
 
-    _, _ -> PatternList(list.reverse([Invalid, ..acc]))
+    _, _, _ -> PatternList(list.reverse([Invalid, ..acc]))
   }
 }
 
