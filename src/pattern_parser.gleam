@@ -5,14 +5,16 @@ pub type Pattern {
   Digit
   Word
   Group(List(String))
-  NGroup(List(String))
+  NegativeGroup(List(String))
   Char(String)
-  PatternList(List(Pattern))
+  Sequence(List(Pattern))
   Invalid
   Start
   End
-  Exact(List(Pattern))
-  AtLeastOne(Pattern)
+  Anchored(List(Pattern))
+  OneOrMore(Pattern)
+  ZeroOrMore(Pattern)
+  Optional(Pattern)
 }
 
 pub fn parse_combined_pattern(pattern: String) -> Pattern {
@@ -22,7 +24,7 @@ pub fn parse_combined_pattern(pattern: String) -> Pattern {
     x -> parse_combined_pattern_rec(x, [], [])
   }
   case res {
-    PatternList([x]) -> x
+    Sequence([x]) -> x
     x -> x
   }
 }
@@ -35,14 +37,18 @@ fn parse_combined_pattern_rec(
   acc: List(Pattern),
 ) -> Pattern {
   case remaining, current_token, acc {
-    [], [], _ -> PatternList(list.reverse(acc))
+    [], [], _ -> Sequence(list.reverse(acc))
 
     ["$"], [], _ -> check_for_exact_pattern(acc)
 
     ["+", ..rest], [], [x, ..xs] ->
-      parse_combined_pattern_rec(rest, [], [AtLeastOne(x), ..xs])
+      parse_combined_pattern_rec(rest, [], [OneOrMore(x), ..xs])
+    ["?", ..rest], [], [x, ..xs] ->
+      parse_combined_pattern_rec(rest, [], [Optional(x), ..xs])
+    ["*", ..rest], [], [x, ..xs] ->
+      parse_combined_pattern_rec(rest, [], [ZeroOrMore(x), ..xs])
 
-    [], ["\\"], _ -> PatternList(list.reverse([Char("\\"), ..acc]))
+    [], ["\\"], _ -> Sequence(list.reverse([Char("\\"), ..acc]))
 
     ["\\", ..rest], [], _ -> parse_combined_pattern_rec(rest, ["\\"], acc)
 
@@ -56,18 +62,18 @@ fn parse_combined_pattern_rec(
       let #(group, rest_after) = list.split_while(rest, fn(x) { x != "]" })
       case group, rest_after {
         ["^", ..bs], [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [NGroup(bs), ..acc])
+          parse_combined_pattern_rec(xs, [], [NegativeGroup(bs), ..acc])
 
         _, [_, ..xs] ->
           parse_combined_pattern_rec(xs, [], [Group(group), ..acc])
 
-        _, [] -> PatternList(list.reverse([Invalid, ..acc]))
+        _, [] -> Sequence(list.reverse([Invalid, ..acc]))
       }
     }
 
     [c, ..rest], [], _ -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
 
-    _, _, _ -> PatternList(list.reverse([Invalid, ..acc]))
+    _, _, _ -> Sequence(list.reverse([Invalid, ..acc]))
   }
 }
 
@@ -76,8 +82,8 @@ fn check_for_exact_pattern(acc: List(Pattern)) -> Pattern {
     Ok(Start) ->
       list.take_while(acc, fn(p) { p != Start })
       |> list.reverse
-      |> Exact
-    _ -> PatternList(list.reverse([End, ..acc]))
+      |> Anchored
+    _ -> Sequence(list.reverse([End, ..acc]))
   }
 }
 

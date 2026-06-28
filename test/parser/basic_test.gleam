@@ -12,11 +12,11 @@ pub fn parse_single_pattern_test() {
 
 pub fn parse_multi_class_pattern_test() {
   assert pattern_parser.parse_combined_pattern("\\d\\d")
-    == pattern_parser.PatternList([pattern_parser.Digit, pattern_parser.Digit])
+    == pattern_parser.Sequence([pattern_parser.Digit, pattern_parser.Digit])
   assert pattern_parser.parse_combined_pattern("\\w\\d")
-    == pattern_parser.PatternList([pattern_parser.Word, pattern_parser.Digit])
+    == pattern_parser.Sequence([pattern_parser.Word, pattern_parser.Digit])
   assert pattern_parser.parse_combined_pattern("was")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Char("w"),
       pattern_parser.Char("a"),
       pattern_parser.Char("s"),
@@ -25,7 +25,7 @@ pub fn parse_multi_class_pattern_test() {
 
 pub fn parse_mixed_literal_and_class_sequence_test() {
   assert pattern_parser.parse_combined_pattern("\\d\\d\\d apples")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Digit,
       pattern_parser.Digit,
       pattern_parser.Digit,
@@ -46,7 +46,7 @@ pub fn parse_escaped_backslash_test() {
 
 pub fn parse_escaped_backslash_sequence_test() {
   assert pattern_parser.parse_combined_pattern("\\\\d")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Char("\\"),
       pattern_parser.Char("d"),
     ])

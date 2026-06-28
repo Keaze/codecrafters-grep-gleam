@@ -2,8 +2,8 @@ import gleam/list
 import gleam/string
 
 import pattern_parser.{
-  type Pattern, AtLeastOne, Char, Digit, End, Exact, Group, NGroup, PatternList,
-  Start, Word,
+  type Pattern, Anchored, Char, Digit, End, Group, NegativeGroup, OneOrMore,
+  Optional, Sequence, Start, Word, ZeroOrMore,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
@@ -14,14 +14,18 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
 
 fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   case pattern {
-    PatternList([]) -> False
-    PatternList(patterns) -> match_pattern_list(input_chars, patterns)
-    Exact(patterns) -> match_sequence(input_chars, list.append(patterns, [End]))
-    AtLeastOne(p) ->
+    Sequence([]) -> False
+    Sequence(patterns) -> match_pattern_list(input_chars, patterns)
+    Anchored(patterns) ->
+      match_sequence(input_chars, list.append(patterns, [End]))
+    OneOrMore(p) ->
       list.any(input_chars, fn(char) { match_char_pattern(char, p) })
+    ZeroOrMore(_) -> True
+    Optional(_) -> True
     Digit -> list.any(input_chars, is_digit)
     Char(c) -> list.contains(input_chars, c)
-    NGroup(g) -> list.any(input_chars, fn(char) { !list.contains(g, char) })
+    NegativeGroup(g) ->
+      list.any(input_chars, fn(char) { !list.contains(g, char) })
     Group(g) -> list.any(input_chars, fn(char) { list.contains(g, char) })
     Word -> list.any(input_chars, is_word_char)
     Start -> True
@@ -56,15 +60,37 @@ fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
   case input, patterns {
     _, [] -> True
     [], [End] -> True
+    [], [Optional(_), ..rest_patterns] -> match_sequence([], rest_patterns)
+    [], [ZeroOrMore(_), ..rest_patterns] -> match_sequence([], rest_patterns)
     [], _ -> False
-    [c, ..rest_input], [AtLeastOne(p), ..rest_patterns] -> {
+    [c, ..rest_input], [OneOrMore(p), ..rest_patterns] -> {
       case match_char_pattern(c, p) {
         True ->
           match_sequence(rest_input, rest_patterns)
-          || match_sequence(rest_input, [AtLeastOne(p), ..rest_patterns])
+          || match_sequence(rest_input, [OneOrMore(p), ..rest_patterns])
         False -> False
       }
     }
+
+    [c, ..rest_input], [ZeroOrMore(p), ..rest_patterns] -> {
+      case match_char_pattern(c, p) {
+        True ->
+          match_sequence(rest_input, rest_patterns)
+          || match_sequence(rest_input, [ZeroOrMore(p), ..rest_patterns])
+          || match_sequence(input, rest_patterns)
+        False -> match_sequence(input, rest_patterns)
+      }
+    }
+
+    [c, ..rest_input], [Optional(p), ..rest_patterns] -> {
+      case match_char_pattern(c, p) {
+        True ->
+          match_sequence(rest_input, rest_patterns)
+          || match_sequence(input, rest_patterns)
+        False -> match_sequence(input, rest_patterns)
+      }
+    }
+
     [c, ..rest_input], [p, ..rest_patterns] -> {
       case match_char_pattern(c, p) {
         True -> match_sequence(rest_input, rest_patterns)
@@ -80,7 +106,7 @@ fn match_char_pattern(char: String, pattern: Pattern) -> Bool {
     Word -> is_word_char(char)
     Char(c) -> char == c
     Group(g) -> list.contains(g, char)
-    NGroup(g) -> !list.contains(g, char)
+    NegativeGroup(g) -> !list.contains(g, char)
     _ -> False
   }
 }

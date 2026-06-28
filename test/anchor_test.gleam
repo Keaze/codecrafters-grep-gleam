@@ -5,7 +5,7 @@ import pattern_parser
 
 pub fn parse_start_pattern_test() {
   assert pattern_parser.parse_combined_pattern("^abc")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Start,
       pattern_parser.Char("a"),
       pattern_parser.Char("b"),
@@ -15,7 +15,7 @@ pub fn parse_start_pattern_test() {
 
 pub fn parse_start_pattern_single_char_test() {
   assert pattern_parser.parse_combined_pattern("^a")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Start,
       pattern_parser.Char("a"),
     ])
@@ -23,7 +23,7 @@ pub fn parse_start_pattern_single_char_test() {
 
 pub fn parse_start_pattern_digit_class_test() {
   assert pattern_parser.parse_combined_pattern("^\\d")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Start,
       pattern_parser.Digit,
     ])
@@ -31,7 +31,7 @@ pub fn parse_start_pattern_digit_class_test() {
 
 pub fn parse_start_pattern_group_test() {
   assert pattern_parser.parse_combined_pattern("^[abc]")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Start,
       pattern_parser.Group(["a", "b", "c"]),
     ])
@@ -39,9 +39,9 @@ pub fn parse_start_pattern_group_test() {
 
 pub fn parse_start_pattern_negative_group_test() {
   assert pattern_parser.parse_combined_pattern("^[^abc]")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Start,
-      pattern_parser.NGroup(["a", "b", "c"]),
+      pattern_parser.NegativeGroup(["a", "b", "c"]),
     ])
 }
 
@@ -53,7 +53,7 @@ pub fn parse_only_start_anchor_test() {
 
 pub fn parse_end_pattern_test() {
   assert pattern_parser.parse_combined_pattern("abc$")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Char("a"),
       pattern_parser.Char("b"),
       pattern_parser.Char("c"),
@@ -63,7 +63,7 @@ pub fn parse_end_pattern_test() {
 
 pub fn parse_end_pattern_single_char_test() {
   assert pattern_parser.parse_combined_pattern("a$")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Char("a"),
       pattern_parser.End,
     ])
@@ -71,7 +71,7 @@ pub fn parse_end_pattern_single_char_test() {
 
 pub fn parse_end_pattern_word_class_test() {
   assert pattern_parser.parse_combined_pattern("\\w$")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Word,
       pattern_parser.End,
     ])
@@ -79,7 +79,7 @@ pub fn parse_end_pattern_word_class_test() {
 
 pub fn parse_end_pattern_group_test() {
   assert pattern_parser.parse_combined_pattern("[abc]$")
-    == pattern_parser.PatternList([
+    == pattern_parser.Sequence([
       pattern_parser.Group(["a", "b", "c"]),
       pattern_parser.End,
     ])
@@ -87,8 +87,8 @@ pub fn parse_end_pattern_group_test() {
 
 pub fn parse_end_pattern_negative_group_test() {
   assert pattern_parser.parse_combined_pattern("[^abc]$")
-    == pattern_parser.PatternList([
-      pattern_parser.NGroup(["a", "b", "c"]),
+    == pattern_parser.Sequence([
+      pattern_parser.NegativeGroup(["a", "b", "c"]),
       pattern_parser.End,
     ])
 }
@@ -97,7 +97,7 @@ pub fn parse_end_pattern_negative_group_test() {
 
 pub fn parse_start_and_end_pattern_test() {
   assert pattern_parser.parse_combined_pattern("^abc$")
-    == pattern_parser.Exact([
+    == pattern_parser.Anchored([
       pattern_parser.Char("a"),
       pattern_parser.Char("b"),
       pattern_parser.Char("c"),
