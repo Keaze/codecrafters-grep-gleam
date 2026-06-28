@@ -6,7 +6,7 @@ pub fn match_pattern_wildcard_single_char_test() {
   assert pattern_matcher.match_pattern("a", ".")
   assert pattern_matcher.match_pattern("1", ".")
   assert pattern_matcher.match_pattern(" ", ".")
-  assert pattern_matcher.match_pattern("ab", ".")
+  assert !pattern_matcher.match_pattern("ab", ".")
   assert !pattern_matcher.match_pattern("", ".")
 }
 

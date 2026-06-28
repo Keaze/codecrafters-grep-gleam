@@ -14,7 +14,7 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
 
 fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   case pattern {
-    Wildcard -> !list.is_empty(input_chars)
+    Wildcard -> list.length(input_chars) == 1
     Sequence([]) -> False
     Sequence(patterns) -> match_pattern_list(input_chars, patterns)
     Anchored(patterns) ->
