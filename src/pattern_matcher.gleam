@@ -2,16 +2,23 @@ import gleam/list
 import gleam/string
 
 import pattern_parser.{
-  type Pattern, Char, Digit, End, Exact, Group, NGroup, PatternList, Start, Word,
+  type Pattern, AtLeastOne, Char, Digit, End, Exact, Group, NGroup, PatternList,
+  Start, Word,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
   let pattern = pattern_parser.parse_combined_pattern(pattern)
   let input_chars = string.to_graphemes(input_line)
+  match_parsed_pattern(pattern, input_chars)
+}
+
+fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   case pattern {
     PatternList([]) -> False
     PatternList(patterns) -> match_pattern_list(input_chars, patterns)
-    Exact(patterns) -> match_exact_sequence(input_chars, patterns)
+    Exact(patterns) -> match_sequence(input_chars, list.append(patterns, [End]))
+    AtLeastOne(p) ->
+      list.any(input_chars, fn(char) { match_char_pattern(char, p) })
     Digit -> list.any(input_chars, is_digit)
     Char(c) -> list.contains(input_chars, c)
     NGroup(g) -> list.any(input_chars, fn(char) { !list.contains(g, char) })
@@ -19,18 +26,6 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
     Word -> list.any(input_chars, is_word_char)
     Start -> True
     _ -> False
-  }
-}
-
-fn match_exact_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
-  case input, patterns {
-    [_, ..], [] -> False
-    [], [] -> True
-    [], _ -> False
-    [c, ..rest_input], [p, ..rest_patterns] -> {
-      match_char_pattern(c, p)
-      && match_exact_sequence(rest_input, rest_patterns)
-    }
   }
 }
 
@@ -62,6 +57,14 @@ fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
     _, [] -> True
     [], [End] -> True
     [], _ -> False
+    [c, ..rest_input], [AtLeastOne(p), ..rest_patterns] -> {
+      case match_char_pattern(c, p) {
+        True ->
+          match_sequence(rest_input, rest_patterns)
+          || match_sequence(rest_input, [AtLeastOne(p), ..rest_patterns])
+        False -> False
+      }
+    }
     [c, ..rest_input], [p, ..rest_patterns] -> {
       case match_char_pattern(c, p) {
         True -> match_sequence(rest_input, rest_patterns)
