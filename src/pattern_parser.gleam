@@ -4,6 +4,7 @@ import gleam/string
 pub type Pattern {
   Digit
   Word
+  Wildcard
   Group(List(String))
   NegativeGroup(List(String))
   Char(String)
@@ -41,6 +42,8 @@ fn parse_combined_pattern_rec(
 
     ["$"], [], _ -> check_for_exact_pattern(acc)
 
+    [".", ..rest], [], _ ->
+      parse_combined_pattern_rec(rest, [], [Wildcard, ..acc])
     ["+", ..rest], [], [x, ..xs] ->
       parse_combined_pattern_rec(rest, [], [OneOrMore(x), ..xs])
     ["?", ..rest], [], [x, ..xs] ->

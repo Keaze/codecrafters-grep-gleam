@@ -3,7 +3,7 @@ import gleam/string
 
 import pattern_parser.{
   type Pattern, Anchored, Char, Digit, End, Group, NegativeGroup, OneOrMore,
-  Optional, Sequence, Start, Word, ZeroOrMore,
+  Optional, Sequence, Start, Wildcard, Word, ZeroOrMore,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
@@ -14,6 +14,7 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
 
 fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   case pattern {
+    Wildcard -> !list.is_empty(input_chars)
     Sequence([]) -> False
     Sequence(patterns) -> match_pattern_list(input_chars, patterns)
     Anchored(patterns) ->
@@ -103,6 +104,7 @@ fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
 fn match_char_pattern(char: String, pattern: Pattern) -> Bool {
   case pattern {
     Digit -> is_digit(char)
+    Wildcard -> True
     Word -> is_word_char(char)
     Char(c) -> char == c
     Group(g) -> list.contains(g, char)
