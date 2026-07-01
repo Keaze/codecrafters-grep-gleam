@@ -5,6 +5,7 @@ pub type Pattern {
   Digit
   Word
   Wildcard
+  Alternative(List(Pattern))
   Group(List(String))
   NegativeGroup(List(String))
   Char(String)
@@ -74,10 +75,29 @@ fn parse_combined_pattern_rec(
       }
     }
 
+    ["(", ..rest], [], _ -> {
+      let #(alt, rest_after) = list.split_while(rest, fn(x) { x != ")" })
+      case alt, rest_after {
+        _, [_, ..xs] ->
+          parse_combined_pattern_rec(xs, [], [
+            parse_optional_pattern(alt),
+            ..acc
+          ])
+
+        _, [] -> Sequence(list.reverse([Invalid, ..acc]))
+      }
+    }
     [c, ..rest], [], _ -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
 
     _, _, _ -> Sequence(list.reverse([Invalid, ..acc]))
   }
+}
+
+fn parse_optional_pattern(alternatives: List(String)) -> Pattern {
+  let result =
+    split_on(alternatives, "|")
+    |> list.map(parse_combined_pattern_rec(_, [], []))
+  Alternative(result)
 }
 
 fn check_for_exact_pattern(acc: List(Pattern)) -> Pattern {
@@ -96,5 +116,12 @@ fn parse_escape_helper(char: String) -> Pattern {
     "d" -> Digit
     "\\" -> Char("\\")
     _ -> Char("\\" <> char)
+  }
+}
+
+pub fn split_on(items: List(a), delimiter: a) -> List(List(a)) {
+  case list.split_while(items, fn(x) { x != delimiter }) {
+    #(chunk, []) -> [chunk]
+    #(chunk, [_delim, ..rest]) -> [chunk, ..split_on(rest, delimiter)]
   }
 }

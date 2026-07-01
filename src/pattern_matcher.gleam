@@ -2,8 +2,8 @@ import gleam/list
 import gleam/string
 
 import pattern_parser.{
-  type Pattern, Anchored, Char, Digit, End, Group, NegativeGroup, OneOrMore,
-  Optional, Sequence, Start, Wildcard, Word, ZeroOrMore,
+  type Pattern, Alternative, Anchored, Char, Digit, End, Group, NegativeGroup,
+  OneOrMore, Optional, Sequence, Start, Wildcard, Word, ZeroOrMore,
 }
 
 pub fn match_pattern(input_line: String, pattern: String) -> Bool {
@@ -28,6 +28,8 @@ fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
     NegativeGroup(g) ->
       list.any(input_chars, fn(char) { !list.contains(g, char) })
     Group(g) -> list.any(input_chars, fn(char) { list.contains(g, char) })
+    Alternative(ps) ->
+      list.any(ps, fn(p) { match_parsed_pattern(p, input_chars) })
     Word -> list.any(input_chars, is_word_char)
     Start -> True
     _ -> False
@@ -90,6 +92,16 @@ fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
           || match_sequence(input, rest_patterns)
         False -> match_sequence(input, rest_patterns)
       }
+    }
+
+    x, [Alternative(p), ..rest_patterns] -> {
+      list.any(p, fn(pattern) {
+        case pattern {
+          Sequence(branch_patterns) ->
+            match_sequence(x, list.append(branch_patterns, rest_patterns))
+          _ -> match_sequence(x, [pattern, ..rest_patterns])
+        }
+      })
     }
 
     [c, ..rest_input], [p, ..rest_patterns] -> {
