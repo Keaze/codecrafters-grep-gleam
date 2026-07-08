@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/string
 
 import pattern_parser.{
@@ -12,13 +13,84 @@ pub fn match_pattern(input_line: String, pattern: String) -> Bool {
   match_parsed_pattern(pattern, input_chars)
 }
 
+pub fn first_match(input_line: String, pattern: String) -> Option(String) {
+  let pattern = pattern_parser.parse_combined_pattern(pattern)
+  let input_chars = string.to_graphemes(input_line)
+  case pattern {
+    Anchored(patterns) -> {
+      case match_sequence(input_chars, list.append(patterns, [End])) {
+        Ok(remaining) -> Some(take_prefix(input_chars, remaining))
+        Error(Nil) -> None
+      }
+    }
+    Sequence(patterns) ->
+      first_match_loop(patterns, input_chars, input_chars, 0)
+    _ -> first_match_loop([pattern], input_chars, input_chars, 0)
+  }
+}
+
+fn take_prefix(input: List(String), remaining: List(String)) -> String {
+  let consumed = list.length(input) - list.length(remaining)
+  input
+  |> list.take(consumed)
+  |> string.concat
+}
+
+fn first_match_loop(
+  patterns: List(Pattern),
+  input: List(String),
+  original: List(String),
+  skipped: Int,
+) -> Option(String) {
+  case match_pattern_list_once(input, patterns) {
+    Ok(remaining) -> {
+      let consumed = list.length(input) - list.length(remaining)
+      original
+      |> list.drop(skipped)
+      |> list.take(consumed)
+      |> string.concat
+      |> Some
+    }
+    Error(Nil) -> {
+      case input {
+        [] -> None
+        [_, ..rest] -> first_match_loop(patterns, rest, original, skipped + 1)
+      }
+    }
+  }
+}
+
+fn match_pattern_list_once(
+  input: List(String),
+  patterns: List(Pattern),
+) -> Result(List(String), Nil) {
+  case input, patterns {
+    [a, ..bs], [Start, x, ..xs] -> {
+      case match_char_pattern(a, x) {
+        True -> match_sequence(bs, xs)
+        False -> Error(Nil)
+      }
+    }
+    _, _ -> match_sequence(input, patterns)
+  }
+}
+
 fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   case pattern {
     Wildcard -> list.length(input_chars) == 1
     Sequence([]) -> False
-    Sequence(patterns) -> match_pattern_list(input_chars, patterns)
-    Anchored(patterns) ->
-      match_sequence(input_chars, list.append(patterns, [End]))
+    Sequence(patterns) -> {
+      case match_pattern_list(input_chars, patterns) {
+        Ok(_) -> True
+        Error(Nil) -> False
+      }
+    }
+    Anchored(patterns) -> {
+      case match_sequence(input_chars, list.append(patterns, [End])) {
+        Ok(_) -> True
+        Error(Nil) -> False
+      }
+    }
     OneOrMore(p) ->
       list.any(input_chars, fn(char) { match_char_pattern(char, p) })
     ZeroOrMore(_) -> True
@@ -36,10 +108,17 @@ fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
   }
 }
 
-fn match_pattern_list(input: List(String), patterns: List(Pattern)) -> Bool {
+fn match_pattern_list(
+  input: List(String),
+  patterns: List(Pattern),
+) -> Result(List(String), Nil) {
   case input, patterns {
-    [a, ..bs], [Start, x, ..xs] ->
-      match_char_pattern(a, x) && match_sequence(bs, xs)
+    [a, ..bs], [Start, x, ..xs] -> {
+      case match_char_pattern(a, x) {
+        True -> match_sequence(bs, xs)
+        False -> Error(Nil)
+      }
+    }
     _, _ -> match_pattern_list_loop(input, patterns)
   }
 }
@@ -47,67 +126,97 @@ fn match_pattern_list(input: List(String), patterns: List(Pattern)) -> Bool {
 fn match_pattern_list_loop(
   input: List(String),
   patterns: List(Pattern),
-) -> Bool {
+) -> Result(List(String), Nil) {
   case match_sequence(input, patterns) {
-    True -> True
-    False -> {
+    Ok(remaining) -> Ok(remaining)
+    Error(Nil) -> {
       case input {
-        [] -> False
+        [] -> Error(Nil)
         [_, ..rest] -> match_pattern_list_loop(rest, patterns)
       }
     }
   }
 }
 
-fn match_sequence(input: List(String), patterns: List(Pattern)) -> Bool {
+fn match_sequence(
+  input: List(String),
+  patterns: List(Pattern),
+) -> Result(List(String), Nil) {
   case input, patterns {
-    _, [] -> True
-    [], [End] -> True
+    _, [] -> Ok(input)
+    [], [End] -> Ok([])
     [], [Optional(_), ..rest_patterns] -> match_sequence([], rest_patterns)
     [], [ZeroOrMore(_), ..rest_patterns] -> match_sequence([], rest_patterns)
-    [], _ -> False
+    [], _ -> Error(Nil)
     [c, ..rest_input], [OneOrMore(p), ..rest_patterns] -> {
       case match_char_pattern(c, p) {
-        True ->
-          match_sequence(rest_input, rest_patterns)
-          || match_sequence(rest_input, [OneOrMore(p), ..rest_patterns])
-        False -> False
+        True -> {
+          case match_sequence(rest_input, rest_patterns) {
+            Ok(remaining) -> Ok(remaining)
+            Error(Nil) ->
+              match_sequence(rest_input, [OneOrMore(p), ..rest_patterns])
+          }
+        }
+        False -> Error(Nil)
       }
     }
-
     [c, ..rest_input], [ZeroOrMore(p), ..rest_patterns] -> {
       case match_char_pattern(c, p) {
-        True ->
-          match_sequence(rest_input, rest_patterns)
-          || match_sequence(rest_input, [ZeroOrMore(p), ..rest_patterns])
-          || match_sequence(input, rest_patterns)
+        True -> {
+          case match_sequence(rest_input, rest_patterns) {
+            Ok(remaining) -> Ok(remaining)
+            Error(Nil) -> {
+              case
+                match_sequence(rest_input, [ZeroOrMore(p), ..rest_patterns])
+              {
+                Ok(remaining) -> Ok(remaining)
+                Error(Nil) -> match_sequence(input, rest_patterns)
+              }
+            }
+          }
+        }
         False -> match_sequence(input, rest_patterns)
       }
     }
-
     [c, ..rest_input], [Optional(p), ..rest_patterns] -> {
       case match_char_pattern(c, p) {
-        True ->
-          match_sequence(rest_input, rest_patterns)
-          || match_sequence(input, rest_patterns)
+        True -> {
+          case match_sequence(rest_input, rest_patterns) {
+            Ok(remaining) -> Ok(remaining)
+            Error(Nil) -> match_sequence(input, rest_patterns)
+          }
+        }
         False -> match_sequence(input, rest_patterns)
       }
     }
-
     x, [Alternative(p), ..rest_patterns] -> {
-      list.any(p, fn(pattern) {
-        case pattern {
-          Sequence(branch_patterns) ->
-            match_sequence(x, list.append(branch_patterns, rest_patterns))
-          _ -> match_sequence(x, [pattern, ..rest_patterns])
-        }
-      })
+      try_alternatives(p, x, rest_patterns)
     }
-
     [c, ..rest_input], [p, ..rest_patterns] -> {
       case match_char_pattern(c, p) {
         True -> match_sequence(rest_input, rest_patterns)
-        False -> False
+        False -> Error(Nil)
+      }
+    }
+  }
+}
+
+fn try_alternatives(
+  alternatives: List(Pattern),
+  input: List(String),
+  rest_patterns: List(Pattern),
+) -> Result(List(String), Nil) {
+  case alternatives {
+    [] -> Error(Nil)
+    [first, ..rest] -> {
+      let result = case first {
+        Sequence(branch_patterns) ->
+          match_sequence(input, list.append(branch_patterns, rest_patterns))
+        _ -> match_sequence(input, [first, ..rest_patterns])
+      }
+      case result {
+        Ok(remaining) -> Ok(remaining)
+        Error(Nil) -> try_alternatives(rest, input, rest_patterns)
       }
     }
   }

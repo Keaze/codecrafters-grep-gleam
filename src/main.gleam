@@ -1,6 +1,7 @@
 import argv
 import gleam/io
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import pattern_matcher
 import pattern_parser
@@ -8,19 +9,33 @@ import pattern_parser
 pub fn main() -> Nil {
   let args = argv.load().arguments
   case args {
-    ["-E", pattern, ..] -> {
-      let matches = matching_lines(read_stdin(), pattern)
-      list.each(matches, io.println)
-
-      case matches {
-        [] -> exit(1)
-        _ -> exit(0)
-      }
-    }
+    ["-o", "-E", pattern, ..] -> run_only_matching(read_stdin(), pattern)
+    ["-E", pattern, ..] -> run_normal(read_stdin(), pattern)
     _ -> {
       io.println_error("Expected first argument to be '-E'")
       exit(1)
     }
+  }
+}
+
+fn run_normal(input: String, pattern: String) -> Nil {
+  let matches = matching_lines(input, pattern)
+  list.each(matches, io.println)
+
+  case matches {
+    [] -> exit(1)
+    _ -> exit(0)
+  }
+}
+
+fn run_only_matching(input: String, pattern: String) -> Nil {
+  let line = normalize_input(input)
+  case pattern_matcher.first_match(line, pattern) {
+    Some(matched) -> {
+      io.println(matched)
+      exit(0)
+    }
+    None -> exit(1)
   }
 }
 
