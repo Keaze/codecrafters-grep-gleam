@@ -39,7 +39,7 @@ fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
 fn match_pattern_list(input: List(String), patterns: List(Pattern)) -> Bool {
   case input, patterns {
     [a, ..bs], [Start, x, ..xs] ->
-      match_char_pattern(a, x) && match_pattern_list_loop(bs, xs)
+      match_char_pattern(a, x) && match_sequence(bs, xs)
     _, _ -> match_pattern_list_loop(input, patterns)
   }
 }

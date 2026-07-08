@@ -114,6 +114,10 @@ pub fn match_pattern_start_anchor_not_at_beginning_test() {
   assert !pattern_matcher.match_pattern("xabc", "^abc")
 }
 
+pub fn match_pattern_start_anchor_with_shared_first_char_no_match_test() {
+  assert !pattern_matcher.match_pattern("prefix_pineapple", "^pineapple")
+}
+
 pub fn match_pattern_start_anchor_with_digit_class_test() {
   assert pattern_matcher.match_pattern("123", "^\\d")
 }
