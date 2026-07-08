@@ -1,7 +1,6 @@
 import argv
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
 import gleam/string
 import pattern_matcher
 import pattern_parser
@@ -29,14 +28,26 @@ fn run_normal(input: String, pattern: String) -> Nil {
 }
 
 fn run_only_matching(input: String, pattern: String) -> Nil {
-  let line = normalize_input(input)
-  case pattern_matcher.first_match(line, pattern) {
-    Some(matched) -> {
-      io.println(matched)
-      exit(0)
-    }
-    None -> exit(1)
+  let matches = only_matching_texts(input, pattern)
+  list.each(matches, io.println)
+
+  case matches {
+    [] -> exit(1)
+    _ -> exit(0)
   }
+}
+
+pub fn only_matching_texts(input: String, pattern: String) -> List(String) {
+  input
+  |> normalize_input
+  |> string.to_graphemes
+  |> pattern_parser.split_on("\n")
+  |> list.map(fn(line) {
+    line
+    |> string.concat
+    |> pattern_matcher.all_matches(pattern)
+  })
+  |> list.flatten
 }
 
 pub fn matching_lines(input: String, pattern: String) -> List(String) {
