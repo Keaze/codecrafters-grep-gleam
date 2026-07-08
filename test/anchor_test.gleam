@@ -118,6 +118,10 @@ pub fn match_pattern_start_anchor_with_shared_first_char_no_match_test() {
   assert !pattern_matcher.match_pattern("prefix_pineapple", "^pineapple")
 }
 
+pub fn match_pattern_start_anchor_with_shared_first_char_no_match_test_and_suffix() {
+  assert !pattern_matcher.match_pattern("prefix_pineapple_suffix", "^pineapple")
+}
+
 pub fn match_pattern_start_anchor_with_digit_class_test() {
   assert pattern_matcher.match_pattern("123", "^\\d")
 }

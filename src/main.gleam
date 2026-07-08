@@ -1,38 +1,47 @@
 import argv
 import gleam/io
+import gleam/list
 import gleam/string
 import pattern_matcher
+import pattern_parser
 
 pub fn main() -> Nil {
   let args = argv.load().arguments
-  let raw_line = get_line("")
-  let input_line = case string.ends_with(raw_line, "\n") {
-    True -> string.drop_end(raw_line, 1)
-    False -> raw_line
-  }
-
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  io.println_error("Logs from your program will appear here!")
-
   case args {
     ["-E", pattern, ..] -> {
-      case pattern_matcher.match_pattern(input_line, pattern) {
-        True -> {
-          io.println(input_line)
-          exit(0)
-        }
-        False -> exit(1)
+      let matches = matching_lines(read_stdin(), pattern)
+      list.each(matches, io.println)
+
+      case matches {
+        [] -> exit(1)
+        _ -> exit(0)
       }
     }
     _ -> {
-      io.println("Expected first argument to be '-E'")
+      io.println_error("Expected first argument to be '-E'")
       exit(1)
     }
   }
 }
 
-@external(erlang, "io", "get_line")
-fn get_line(prompt prompt: String) -> String
+pub fn matching_lines(input: String, pattern: String) -> List(String) {
+  input
+  |> normalize_input
+  |> string.to_graphemes
+  |> pattern_parser.split_on("\n")
+  |> list.map(fn(line) { string.concat(line) })
+  |> list.filter(fn(line) { pattern_matcher.match_pattern(line, pattern) })
+}
+
+fn normalize_input(input: String) -> String {
+  case string.ends_with(input, "\n") {
+    True -> string.drop_end(input, 1)
+    False -> input
+  }
+}
+
+@external(erlang, "main_ffi", "read_stdin")
+fn read_stdin() -> String
 
 @external(erlang, "erlang", "halt")
 pub fn exit(code: Int) -> Nil
