@@ -12,12 +12,15 @@ pub fn main() -> Nil {
   }
 
   // You can use print statements as follows for debugging, they'll be visible when running tests.
-  io.print_error("Logs from your program will appear here!")
+  io.println_error("Logs from your program will appear here!")
 
   case args {
     ["-E", pattern, ..] -> {
       case pattern_matcher.match_pattern(input_line, pattern) {
-        True -> exit(0)
+        True -> {
+          io.println(input_line)
+          exit(0)
+        }
         False -> exit(1)
       }
     }
