@@ -14,6 +14,13 @@ pub fn main() -> Nil {
     ["--color=always", "-E", pattern, ..] ->
       run_highlight(read_stdin(), pattern)
     ["--color=never", "-E", pattern, ..] -> run_normal(read_stdin(), pattern)
+    ["--color=auto", "-E", pattern, ..] -> {
+      let input = read_stdin()
+      case is_stdout_tty() {
+        True -> run_highlight(input, pattern)
+        False -> run_normal(input, pattern)
+      }
+    }
     ["-o", "-E", pattern, ..] -> run_only_matching(read_stdin(), pattern)
     ["-E", pattern, ..] -> run_normal(read_stdin(), pattern)
     _ -> {
@@ -113,6 +120,9 @@ fn drop_trailing_newline(input: String) -> String {
 
 @external(erlang, "main_ffi", "read_stdin")
 fn read_stdin() -> String
+
+@external(erlang, "main_ffi", "is_stdout_tty")
+fn is_stdout_tty() -> Bool
 
 @external(erlang, "erlang", "halt")
 pub fn exit(code: Int) -> Nil
