@@ -1,7 +1,6 @@
 import argv
 import gleam/io
 import gleam/list
-import gleam/option.{None, Some}
 import gleam/string
 import pattern_matcher
 
@@ -49,13 +48,10 @@ fn run_highlight(input: String, pattern: String) -> Nil {
     |> drop_trailing_newline
     |> string.split("\n")
     |> list.filter_map(fn(line) {
-      case pattern_matcher.first_match_position(line, pattern) {
-        Some(#(start, match_text)) -> {
-          let before = string.slice(line, 0, start)
-          let after = string.drop_start(line, start + string.length(match_text))
-          Ok(before <> red_open <> match_text <> reset <> after)
-        }
-        None -> Error(Nil)
+      let positions = pattern_matcher.all_match_positions(line, pattern)
+      case positions {
+        [] -> Error(Nil)
+        _ -> Ok(highlight_line(line, positions))
       }
     })
 
@@ -64,6 +60,31 @@ fn run_highlight(input: String, pattern: String) -> Nil {
   case highlighted {
     [] -> exit(1)
     _ -> exit(0)
+  }
+}
+
+fn highlight_line(line: String, positions: List(#(Int, String))) -> String {
+  highlight_line_loop(line, positions, 0, "")
+}
+
+fn highlight_line_loop(
+  line: String,
+  positions: List(#(Int, String)),
+  index: Int,
+  acc: String,
+) -> String {
+  case positions {
+    [] -> acc <> string.drop_start(line, index)
+    [#(start, match_text), ..rest] -> {
+      let before = string.slice(line, index, start - index)
+      let next_index = start + string.length(match_text)
+      highlight_line_loop(
+        line,
+        rest,
+        next_index,
+        acc <> before <> red_open <> match_text <> reset,
+      )
+    }
   }
 }
 

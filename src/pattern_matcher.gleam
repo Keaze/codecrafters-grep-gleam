@@ -70,6 +70,74 @@ pub fn first_match_position(
   }
 }
 
+pub fn all_match_positions(
+  input_line: String,
+  pattern: String,
+) -> List(#(Int, String)) {
+  let pattern = pattern_parser.parse_combined_pattern(pattern)
+  let input_chars = string.to_graphemes(input_line)
+  case pattern {
+    Anchored(patterns) ->
+      case match_sequence(input_chars, list.append(patterns, [End])) {
+        Ok(remaining) -> {
+          let consumed = list.length(input_chars) - list.length(remaining)
+          case consumed > 0 {
+            True -> [#(0, take_prefix(input_chars, remaining))]
+            False -> []
+          }
+        }
+        Error(Nil) -> []
+      }
+    Sequence(patterns) -> {
+      case patterns {
+        [Start, ..] -> all_match_positions_from_start(input_chars, patterns)
+        _ -> all_match_positions_loop(patterns, input_chars, input_chars, 0, [])
+      }
+    }
+    _ -> all_match_positions_loop([pattern], input_chars, input_chars, 0, [])
+  }
+}
+
+fn all_match_positions_from_start(
+  input: List(String),
+  patterns: List(Pattern),
+) -> List(#(Int, String)) {
+  case match_at_position(input, patterns, input, 0) {
+    Some(result) -> [result]
+    None -> []
+  }
+}
+
+fn all_match_positions_loop(
+  patterns: List(Pattern),
+  input: List(String),
+  original: List(String),
+  skipped: Int,
+  acc: List(#(Int, String)),
+) -> List(#(Int, String)) {
+  case match_at_position(input, patterns, original, skipped) {
+    Some(#(start, matched_text)) -> {
+      let consumed = string.length(matched_text)
+      let remaining = list.drop(input, consumed)
+      all_match_positions_loop(
+        patterns,
+        remaining,
+        original,
+        skipped + consumed,
+        [#(start, matched_text), ..acc],
+      )
+    }
+    None -> {
+      case patterns, input {
+        [Start, ..], _ -> list.reverse(acc)
+        _, [] -> list.reverse(acc)
+        _, [_, ..rest] ->
+          all_match_positions_loop(patterns, rest, original, skipped + 1, acc)
+      }
+    }
+  }
+}
+
 fn first_match_position_loop(
   patterns: List(Pattern),
   input: List(String),
