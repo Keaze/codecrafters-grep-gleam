@@ -63,28 +63,26 @@ fn parse_combined_pattern_rec(
       parse_combined_pattern_rec(rest, [], [parse_escape_helper(c), ..acc])
 
     ["[", ..rest], [], _ -> {
-      let #(group, rest_after) = list.split_while(rest, fn(x) { x != "]" })
-      case group, rest_after {
-        ["^", ..bs], [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [NegativeGroup(bs), ..acc])
+      let #(found, group, rest_after) = scan_group(rest)
+      case found, group {
+        False, _ -> Sequence(list.reverse([Invalid, ..acc]))
+        True, ["^", ..bs] ->
+          parse_combined_pattern_rec(rest_after, [], [NegativeGroup(bs), ..acc])
 
-        _, [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [Group(group), ..acc])
-
-        _, [] -> Sequence(list.reverse([Invalid, ..acc]))
+        True, _ ->
+          parse_combined_pattern_rec(rest_after, [], [Group(group), ..acc])
       }
     }
 
     ["(", ..rest], [], _ -> {
-      let #(alt, rest_after) = list.split_while(rest, fn(x) { x != ")" })
-      case alt, rest_after {
-        _, [_, ..xs] ->
-          parse_combined_pattern_rec(xs, [], [
+      let #(found, alt, rest_after) = scan_alternative(rest)
+      case found {
+        False -> Sequence(list.reverse([Invalid, ..acc]))
+        True ->
+          parse_combined_pattern_rec(rest_after, [], [
             parse_optional_pattern(alt),
             ..acc
           ])
-
-        _, [] -> Sequence(list.reverse([Invalid, ..acc]))
       }
     }
     [c, ..rest], [], _ -> parse_combined_pattern_rec(rest, [], [Char(c), ..acc])
@@ -95,9 +93,70 @@ fn parse_combined_pattern_rec(
 
 fn parse_optional_pattern(alternatives: List(String)) -> Pattern {
   let result =
-    split_on(alternatives, "|")
+    split_alternatives(alternatives)
     |> list.map(parse_combined_pattern_rec(_, [], []))
   Alternative(result)
+}
+
+// Scan a character group until an unescaped `]`.
+// Only `\]` and `\\` are treated as escapes; other backslashes are left
+// intact so that character-class content such as `\d` keeps its original
+// meaning for the matcher.
+fn scan_group(items: List(String)) -> #(Bool, List(String), List(String)) {
+  scan_group_rec(items, [])
+}
+
+fn scan_group_rec(
+  items: List(String),
+  acc: List(String),
+) -> #(Bool, List(String), List(String)) {
+  case items {
+    [] -> #(False, list.reverse(acc), [])
+    ["]", ..rest] -> #(True, list.reverse(acc), rest)
+    ["\\", "]", ..rest] -> scan_group_rec(rest, ["]", ..acc])
+    ["\\", "\\", ..rest] -> scan_group_rec(rest, ["\\", ..acc])
+    [c, ..rest] -> scan_group_rec(rest, [c, ..acc])
+  }
+}
+
+// Scan an alternation until an unescaped `)`.
+// Only `\)` is treated as an escape; other backslashes are preserved so that
+// branches such as `\d` and `\w` keep their special meaning.
+fn scan_alternative(
+  items: List(String),
+) -> #(Bool, List(String), List(String)) {
+  scan_alternative_rec(items, [])
+}
+
+fn scan_alternative_rec(
+  items: List(String),
+  acc: List(String),
+) -> #(Bool, List(String), List(String)) {
+  case items {
+    [] -> #(False, list.reverse(acc), [])
+    [")", ..rest] -> #(True, list.reverse(acc), rest)
+    ["\\", ")", ..rest] -> scan_alternative_rec(rest, [")", ..acc])
+    [c, ..rest] -> scan_alternative_rec(rest, [c, ..acc])
+  }
+}
+
+// Split alternation contents on unescaped `|` bars.
+fn split_alternatives(items: List(String)) -> List(List(String)) {
+  split_alternatives_rec(items, [], [])
+}
+
+fn split_alternatives_rec(
+  items: List(String),
+  current: List(String),
+  acc: List(List(String)),
+) -> List(List(String)) {
+  case items {
+    [] -> list.reverse([list.reverse(current), ..acc])
+    ["\\", "|", ..rest] -> split_alternatives_rec(rest, ["|", ..current], acc)
+    ["|", ..rest] ->
+      split_alternatives_rec(rest, [], [list.reverse(current), ..acc])
+    [c, ..rest] -> split_alternatives_rec(rest, [c, ..current], acc)
+  }
 }
 
 fn check_for_exact_pattern(acc: List(Pattern)) -> Pattern {
@@ -115,7 +174,7 @@ fn parse_escape_helper(char: String) -> Pattern {
     "w" -> Word
     "d" -> Digit
     "\\" -> Char("\\")
-    _ -> Char("\\" <> char)
+    _ -> Char(char)
   }
 }
 

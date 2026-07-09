@@ -3,7 +3,6 @@ import gleam/io
 import gleam/list
 import gleam/string
 import pattern_matcher
-import pattern_parser
 
 pub fn main() -> Nil {
   let args = argv.load().arguments
@@ -39,27 +38,20 @@ fn run_only_matching(input: String, pattern: String) -> Nil {
 
 pub fn only_matching_texts(input: String, pattern: String) -> List(String) {
   input
-  |> normalize_input
-  |> string.to_graphemes
-  |> pattern_parser.split_on("\n")
-  |> list.map(fn(line) {
-    line
-    |> string.concat
-    |> pattern_matcher.all_matches(pattern)
-  })
+  |> drop_trailing_newline
+  |> string.split("\n")
+  |> list.map(fn(line) { pattern_matcher.all_matches(line, pattern) })
   |> list.flatten
 }
 
 pub fn matching_lines(input: String, pattern: String) -> List(String) {
   input
-  |> normalize_input
-  |> string.to_graphemes
-  |> pattern_parser.split_on("\n")
-  |> list.map(fn(line) { string.concat(line) })
+  |> drop_trailing_newline
+  |> string.split("\n")
   |> list.filter(fn(line) { pattern_matcher.match_pattern(line, pattern) })
 }
 
-fn normalize_input(input: String) -> String {
+fn drop_trailing_newline(input: String) -> String {
   case string.ends_with(input, "\n") {
     True -> string.drop_end(input, 1)
     False -> input

@@ -160,6 +160,7 @@ fn match_parsed_pattern(pattern: Pattern, input_chars: List(String)) -> Bool {
       list.any(ps, fn(p) { match_parsed_pattern(p, input_chars) })
     Word -> list.any(input_chars, is_word_char)
     Start -> True
+    End -> True
     _ -> False
   }
 }
