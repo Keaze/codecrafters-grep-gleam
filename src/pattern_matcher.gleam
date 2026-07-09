@@ -76,6 +76,25 @@ fn first_match_position_loop(
   original: List(String),
   skipped: Int,
 ) -> Option(#(Int, String)) {
+  case match_at_position(input, patterns, original, skipped) {
+    Some(result) -> Some(result)
+    None -> {
+      case patterns, input {
+        [Start, ..], _ -> None
+        _, [] -> None
+        _, [_, ..rest] ->
+          first_match_position_loop(patterns, rest, original, skipped + 1)
+      }
+    }
+  }
+}
+
+fn match_at_position(
+  input: List(String),
+  patterns: List(Pattern),
+  original: List(String),
+  skipped: Int,
+) -> Option(#(Int, String)) {
   case match_pattern_list_once(input, patterns) {
     Ok(remaining) -> {
       let consumed = list.length(input) - list.length(remaining)
@@ -88,22 +107,10 @@ fn first_match_position_loop(
             |> string.concat
           Some(#(skipped, matched_text))
         }
-        False -> {
-          case input {
-            [] -> None
-            [_, ..rest] ->
-              first_match_position_loop(patterns, rest, original, skipped + 1)
-          }
-        }
+        False -> None
       }
     }
-    Error(Nil) -> {
-      case input {
-        [] -> None
-        [_, ..rest] ->
-          first_match_position_loop(patterns, rest, original, skipped + 1)
-      }
-    }
+    Error(Nil) -> None
   }
 }
 
@@ -166,19 +173,14 @@ fn first_match_loop(
   original: List(String),
   skipped: Int,
 ) -> Option(String) {
-  case match_pattern_list_once(input, patterns) {
-    Ok(remaining) -> {
-      let consumed = list.length(input) - list.length(remaining)
-      original
-      |> list.drop(skipped)
-      |> list.take(consumed)
-      |> string.concat
-      |> Some
-    }
-    Error(Nil) -> {
-      case input {
-        [] -> None
-        [_, ..rest] -> first_match_loop(patterns, rest, original, skipped + 1)
+  case match_at_position(input, patterns, original, skipped) {
+    Some(#(_, matched_text)) -> Some(matched_text)
+    None -> {
+      case patterns, input {
+        [Start, ..], _ -> None
+        _, [] -> None
+        _, [_, ..rest] ->
+          first_match_loop(patterns, rest, original, skipped + 1)
       }
     }
   }
