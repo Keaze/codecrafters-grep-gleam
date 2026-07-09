@@ -13,6 +13,7 @@ pub fn main() -> Nil {
   case args {
     ["--color=always", "-E", pattern, ..] ->
       run_highlight(read_stdin(), pattern)
+    ["--color=never", "-E", pattern, ..] -> run_normal(read_stdin(), pattern)
     ["-o", "-E", pattern, ..] -> run_only_matching(read_stdin(), pattern)
     ["-E", pattern, ..] -> run_normal(read_stdin(), pattern)
     _ -> {
