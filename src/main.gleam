@@ -1,12 +1,19 @@
 import argv
 import gleam/io
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import pattern_matcher
+
+const red_open = "\u{001b}[01;31m"
+
+const reset = "\u{001b}[m"
 
 pub fn main() -> Nil {
   let args = argv.load().arguments
   case args {
+    ["--color=always", "-E", pattern, ..] ->
+      run_highlight(read_stdin(), pattern)
     ["-o", "-E", pattern, ..] -> run_only_matching(read_stdin(), pattern)
     ["-E", pattern, ..] -> run_normal(read_stdin(), pattern)
     _ -> {
@@ -31,6 +38,30 @@ fn run_only_matching(input: String, pattern: String) -> Nil {
   list.each(matches, io.println)
 
   case matches {
+    [] -> exit(1)
+    _ -> exit(0)
+  }
+}
+
+fn run_highlight(input: String, pattern: String) -> Nil {
+  let highlighted =
+    input
+    |> drop_trailing_newline
+    |> string.split("\n")
+    |> list.filter_map(fn(line) {
+      case pattern_matcher.first_match_position(line, pattern) {
+        Some(#(start, match_text)) -> {
+          let before = string.slice(line, 0, start)
+          let after = string.drop_start(line, start + string.length(match_text))
+          Ok(before <> red_open <> match_text <> reset <> after)
+        }
+        None -> Error(Nil)
+      }
+    })
+
+  list.each(highlighted, io.println)
+
+  case highlighted {
     [] -> exit(1)
     _ -> exit(0)
   }

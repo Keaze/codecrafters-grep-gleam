@@ -45,6 +45,74 @@ pub fn first_match(input_line: String, pattern: String) -> Option(String) {
   }
 }
 
+pub fn first_match_position(
+  input_line: String,
+  pattern: String,
+) -> Option(#(Int, String)) {
+  let pattern = pattern_parser.parse_combined_pattern(pattern)
+  let input_chars = string.to_graphemes(input_line)
+  case pattern {
+    Anchored(patterns) -> {
+      case match_sequence(input_chars, list.append(patterns, [End])) {
+        Ok(remaining) -> {
+          let consumed = list.length(input_chars) - list.length(remaining)
+          case consumed > 0 {
+            True -> Some(#(0, take_chars(input_chars, consumed)))
+            False -> None
+          }
+        }
+        Error(Nil) -> None
+      }
+    }
+    Sequence(patterns) ->
+      first_match_position_loop(patterns, input_chars, input_chars, 0)
+    _ -> first_match_position_loop([pattern], input_chars, input_chars, 0)
+  }
+}
+
+fn first_match_position_loop(
+  patterns: List(Pattern),
+  input: List(String),
+  original: List(String),
+  skipped: Int,
+) -> Option(#(Int, String)) {
+  case match_pattern_list_once(input, patterns) {
+    Ok(remaining) -> {
+      let consumed = list.length(input) - list.length(remaining)
+      case consumed > 0 {
+        True -> {
+          let matched_text =
+            original
+            |> list.drop(skipped)
+            |> list.take(consumed)
+            |> string.concat
+          Some(#(skipped, matched_text))
+        }
+        False -> {
+          case input {
+            [] -> None
+            [_, ..rest] ->
+              first_match_position_loop(patterns, rest, original, skipped + 1)
+          }
+        }
+      }
+    }
+    Error(Nil) -> {
+      case input {
+        [] -> None
+        [_, ..rest] ->
+          first_match_position_loop(patterns, rest, original, skipped + 1)
+      }
+    }
+  }
+}
+
+fn take_chars(chars: List(String), count: Int) -> String {
+  chars
+  |> list.take(count)
+  |> string.concat
+}
+
 fn all_matches_from_start(
   input: List(String),
   patterns: List(Pattern),
